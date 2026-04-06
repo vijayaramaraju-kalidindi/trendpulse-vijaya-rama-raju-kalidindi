@@ -89,6 +89,8 @@ for story_id in stories_id[:500]:
            break
     except Exception as e:
                 print(f"Error fetching story with ID {story_id}: {e}")
+
+
 # ---------------------------------------------------------
 # Step 3: Flatten Data
 # ---------------------------------------------------------
@@ -100,7 +102,7 @@ for category_list in collected.values():
 # Step 4: Save Data to JSON File
 # ---------------------------------------------------------
 os.makedirs('data', exist_ok=True)  # Create 'data' directory if it doesn't exist
-filename = f"data/trends_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+filename = f"data/trends_{datetime.now().strftime('%Y%m%d')}.json"
 
 with open(filename, 'w') as file:
     json.dump(final_data, file, indent=4)
@@ -109,8 +111,9 @@ with open(filename, 'w') as file:
 # Step 5: Final Output / Validation
 # ---------------------------------------------------------
 print("Data collection complete.")
-print(f"Collected {len(final_data)} stories.")
-print(f"Data saved to: {filename}")
+print(f"Collected {len(final_data)} stories. Saved to '{filename}'")
+if len(final_data) < 100:
+    print("Warning: Less than 100 categorized stories due to strict keyword filtering")
 
 print("\nCategory counts:")
 for cat, items in collected.items():
