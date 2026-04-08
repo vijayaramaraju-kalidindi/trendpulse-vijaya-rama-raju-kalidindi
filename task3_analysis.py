@@ -6,61 +6,69 @@ import pandas as pd
 import numpy as np
 
 # ---------------------------------------------------------
-# Step 1: Load Cleaned Data
+# Step 1: Load and Explore Cleaned Data
 # ---------------------------------------------------------
 
 # Load processed dataset from Task-2
-df = pd.read_csv('hacker_news_stories.csv')
+df = pd.read_csv('data/trends_cleaned.csv')
+print(f"Loaded data: {df.shape}")
+
+# Print the first 5 rows
+print(f"\nFirst 5:\n{df.head(5)}")
+
+# Print the shape of the DataFrame (rows and columns)
+print(f"\nShape of the DataFrame : {df.shape[0]} rows, {df.shape[1]} columns")
+
+# Print the average score and average num_comments across all stories
+avg_score = df['score'].mean()
+avg_num_comments = df['num_comments'].mean()
+print(f"\nAverage score: {avg_score:.0f}")
+print(f"Average number of comments: {avg_num_comments:.0f}")
 
 # ---------------------------------------------------------
-# Step 2: Basic Statistical Analysis
+# Step 2: Basic Analysis with NumPy
 # ---------------------------------------------------------
 
-# Calculate average and median score
-average_score = np.mean(df['score'])
-median_score = np.median(df['score'])
+# mean, median, and standard deviation of score
+score_mean = np.mean(df['score'])
+score_median = np.median(df['score'])
+score_std = np.std(df['score'])
+print(f"\n--- NumPy Stats ---")
+print(f"Mean score   : {score_mean:.0f}")
+print(f"Median score : {score_median:.0f}")
+print(f"Std Dev score: {score_std:.0f}")
 
-print(f"Average score: {average_score}")
-print(f"Median score: {median_score}")
+# highest score and lowest score
+max_score = np.max(df['score'])
+min_score = np.min(df['score'])
+print(f"Max score    : {max_score}")
+print(f"Min score    : {min_score}")
 
-# Determine skewness based on mean vs median
-if average_score > median_score:
-    print("Insight: The distribution of scores is right-skewed.")
-elif average_score < median_score:
-    print("Insight: The distribution of scores is left-skewed.")
-else:
-    print("Insight: The distribution of scores is symmetric.")
+# category has the most stories
+category_counts = df['category'].value_counts()
+most_common_category = category_counts.idxmax()
+most_common_count = category_counts.max()
+print(f"\nMost stories in: {most_common_category} ({most_common_count} stories)")
 
-# ---------------------------------------------------------
-# Step 3: Top Authors Analysis
-# ---------------------------------------------------------
-
-# Identify top 5 authors based on number of posts
-top_authors = df['by'].value_counts().head(5)
-
-# Clean index name for better display
-top_authors.index.name = None
-print(f"\nTop 5 authors:\n{top_authors}")
-
-# ---------------------------------------------------------
-# Step 4: Highest Scoring Posts
-# ---------------------------------------------------------
-
-# Sort posts by score in descending order and get top 5
-highest_score_posts = df.sort_values(by='score', ascending=False).head(5)
-print(f"\n Top 5 highest scoring posts:\n {highest_score_posts[['title', 'score']]}")
+# story has the most comments
+max_comments = np.max(df['num_comments'])
+most_commented_story = df[df['num_comments'] == max_comments]['title'].values[0]
+print(f'\nMost commented story: "{most_commented_story}"  — {max_comments} comments')
 
 # ---------------------------------------------------------
-# Step 5: Time-Based Analysis
+# Step 3: Add New Columns
 # ---------------------------------------------------------
 
-# Ensure 'time' column is in datetime format
-df['time'] = pd.to_datetime(df['time'])
+# Engagement = comments per upvote
+df['engagement'] = df['num_comments'] / (df['score'] + 1)
 
-# Extract hour from timestamp
-df['hour'] = df['time'].dt.hour
+# Popular if score > average score
+df['popular'] = df['score'] > avg_score
+print(f"\nAdded 'engagement' and 'popular' columns.")
 
-# Count number of posts per hour
-hourly_posts = df['hour'].value_counts().sort_index()
-
-print(f"\nNumber of posts by hour of the day:\n{hourly_posts}")
+# ---------------------------------------------------------
+# Step 4: Save Results
+# ---------------------------------------------------------
+output_path = "data/trends_analysed.csv"
+df.to_csv(output_path, index=False)
+print(f"\nSaved to {output_path}\n")
