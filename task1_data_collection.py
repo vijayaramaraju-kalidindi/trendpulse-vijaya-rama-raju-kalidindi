@@ -124,6 +124,7 @@ for i in range(15):
         "author": None,
         "collected_at": None
     })
+print(f"Total stories after adding noisy data (duplicates and missing values): {len(final_data)}")
 
 ##### Shuffle the data to mix duplicates and missing values
 random.shuffle(final_data)
@@ -142,7 +143,3 @@ with open(filename, 'w') as file:
 # ---------------------------------------------------------
 print("Data collection complete.")
 print(f"Collected {len(final_data)} stories. Saved to {filename}")
-
-print("\nCategory counts:")
-for cat, items in collected.items():
-    print(f"{cat}: {len(items)}")

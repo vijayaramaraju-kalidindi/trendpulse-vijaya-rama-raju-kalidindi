@@ -13,7 +13,7 @@ import json
 
 file_path = "data/trends_20260408.json" 
 df = pd.read_json(file_path)
-print(f"Loaded {len(df)} stories from {file_path}")
+print(f"\nLoaded {len(df)} stories from {file_path}")
 
 ## Temporary loading df data to csv to check for duplicates and missing values before cleaning.
 temp_path = "data/trends_before_cleaning.csv"
@@ -23,25 +23,30 @@ df.to_csv(temp_path, index=False)
 # Step 2: Clean the Data
 # ---------------------------------------------------------
 
-# 1. Remove duplicates based on post_id
+print(f"\nData type information: \n")
+df.info()
+print("\nCleaning data...")
+print(f"\nInitial data count: {len(df)}")
+
+# Duplicates — remove any rows with the same post_id
 df = df.drop_duplicates(subset='post_id')
 print(f"\nAfter removing duplicates: {len(df)}")
 
-# 2. Remove missing values
+# Missing values — drop rows where post_id, title, or score is missing
 df = df.dropna(subset=['post_id', 'title', 'score'])
 print(f"After removing nulls: {len(df)}")
 
-# 3. Data types — make sure score and num_comments are integers
+# Data types — make sure score and num_comments are integers
 df['score'] = pd.to_numeric(df['score'], errors='coerce')
 df['num_comments'] = pd.to_numeric(df['num_comments'], errors='coerce')
 df['score'] = df['score'].astype(int)
 df['num_comments'] = df['num_comments'].astype(int)
 
-# 4. Remove low-quality stories (score < 5)
+# Low quality — remove stories where score is less than 5df = df[df['score'] >= 5]
 df = df[df['score'] >= 5]
 print(f"After removing low scores: {len(df)}")
 
-# 5. Strip whitespace from title
+# Whitespace — strip extra spaces from the title column
 df['title'] = df['title'].str.strip()
 
 # Print the number of rows remaining after cleaning.
