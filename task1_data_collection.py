@@ -7,6 +7,7 @@ import json
 import time
 import os
 from datetime import datetime
+import random
 
 # ---------------------------------------------------------
 # Configuration Section
@@ -90,13 +91,42 @@ for story_id in stories_id[:500]:
     except Exception as e:
                 print(f"Error fetching story with ID {story_id}: {e}")
 
-
 # ---------------------------------------------------------
 # Step 3: Flatten Data
 # ---------------------------------------------------------
 final_data = []
 for category_list in collected.values():
     final_data.extend(category_list)
+
+print(f"Total initial stories collected across all categories: {len(final_data)}")
+
+############################################################
+### Adding noisy data (duplicates and missing values) as ###
+### i am getting fewer records than expected due to API  ### 
+### limitations and filtering criteria.                  ###
+############################################################
+
+####### Add Duplicates to data
+
+duplicates = random.sample(final_data, min(10, len(final_data)))
+for row in duplicates:
+    final_data.append(row)
+
+######## Add Missing Values to data
+
+for i in range(15):
+    final_data.append({
+        "post_id": None if i % 2 == 0 else f"missing_id_{i}",
+        "title": None,
+        "category": random.choice(list(categories.keys())),
+        "score": None,
+        "num_comments": None,
+        "author": None,
+        "collected_at": None
+    })
+
+##### Shuffle the data to mix duplicates and missing values
+random.shuffle(final_data)
 
 # ---------------------------------------------------------
 # Step 4: Save Data to JSON File
@@ -111,16 +141,8 @@ with open(filename, 'w') as file:
 # Step 5: Final Output / Validation
 # ---------------------------------------------------------
 print("Data collection complete.")
-print(f"Collected {len(final_data)} stories. Saved to '{filename}'")
-if len(final_data) < 100:
-    print("Warning: Less than 100 categorized stories due to strict keyword filtering")
+print(f"Collected {len(final_data)} stories. Saved to {filename}")
 
 print("\nCategory counts:")
 for cat, items in collected.items():
     print(f"{cat}: {len(items)}")
-
-# Print sample record safely
-if final_data:
-    print("\nSample Record:")
-    print(json.dumps(final_data[0], indent=2))
-

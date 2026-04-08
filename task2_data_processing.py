@@ -9,78 +9,56 @@ import json
 # Step 1: Load JSON Data
 # ---------------------------------------------------------
 
-# Load raw Hacker News data collected from Task-1
-with open('hacker_news_top_stories.json', 'r') as f:
-    data = json.load(f)
+# Load category filtered Hacker News data collected from Task-1
 
-# Convert JSON data into a pandas DataFrame
-df = pd.DataFrame(data)
+file_path = "data/trends_20260408.json" 
+df = pd.read_json(file_path)
+print(f"Loaded {len(df)} stories from {file_path}")
 
-# ---------------------------------------------------------
-# Step 2: Select Relevant Columns
-# ---------------------------------------------------------
-
-# Keep only necessary columns for analysis
-df = df[['title', 'by', 'score', 'time', 'type']]
+## Temporary loading df data to csv to check for duplicates and missing values before cleaning.
+temp_path = "data/trends_before_cleaning.csv"
+df.to_csv(temp_path, index=False)
 
 # ---------------------------------------------------------
-# Step 3: Check Missing Values
+# Step 2: Clean the Data
 # ---------------------------------------------------------
 
-# Identify missing/null values in each column
-print(f"Missing values in the DataFrame:\n{df.isnull().sum()}")
+# 1. Remove duplicates based on post_id
+df = df.drop_duplicates(subset='post_id')
+print(f"\nAfter removing duplicates: {len(df)}")
 
-# ---------------------------------------------------------
-# Step 4: Filter Valid Story Records
-# ---------------------------------------------------------
+# 2. Remove missing values
+df = df.dropna(subset=['post_id', 'title', 'score'])
+print(f"After removing nulls: {len(df)}")
 
-# Keep only records where type is 'story'
-df = df[df['type'] == 'story']
-
-# Drop rows with missing critical fields
-df = df.dropna(subset=['title', 'by', 'score', 'time'])
-
-# ---------------------------------------------------------
-# Step 5: Data Type Conversion
-# ---------------------------------------------------------
-
-# Ensure author names are treated as strings
-df['by'] = df['by'].astype(str)
-
-# Convert score to numeric (invalid values become NaN)
+# 3. Data types — make sure score and num_comments are integers
 df['score'] = pd.to_numeric(df['score'], errors='coerce')
+df['num_comments'] = pd.to_numeric(df['num_comments'], errors='coerce')
+df['score'] = df['score'].astype(int)
+df['num_comments'] = df['num_comments'].astype(int)
 
-# Drop rows where conversion failed (NaN values introduced)
-df =df.dropna()
+# 4. Remove low-quality stories (score < 5)
+df = df[df['score'] >= 5]
+print(f"After removing low scores: {len(df)}")
 
-# Check data types after conversion
-print(df.dtypes)
+# 5. Strip whitespace from title
+df['title'] = df['title'].str.strip()
 
-# ---------------------------------------------------------
-# Step 6: Convert Timestamp to Readable Format
-# ---------------------------------------------------------
-
-# Convert UNIX timestamp to datetime format
-df['time'] = pd.to_datetime(df['time'], unit='s')
-
-# ---------------------------------------------------------
-# Step 7: Save Cleaned Data
-# ---------------------------------------------------------
-
-# Save processed data to CSV for further analysis
-df.to_csv('hacker_news_stories.csv', index=False)
+# Print the number of rows remaining after cleaning.
+print(f"\nNumber of rows after cleaning: {len(df)}")
 
 # ---------------------------------------------------------
-# Step 8: Final Output / Validation
+# Step 3: Save as CSV
 # ---------------------------------------------------------
-print("Data processing complete.")
-print("Top stories saved to 'hacker_news_stories.csv'.")
+output_path = "data/trends_cleaned.csv"
+df.to_csv(output_path, index=False)
+print(f"\nSaved {len(df)} rows to {output_path}")
 
-# Print total processed records
-print(f"Total stories processed: {len(df)}")
+# ---------------------------------------------------------
+# Step 4: Stories per category
+# ---------------------------------------------------------
+print("\nStories per category:")
+category_counts = df['category'].value_counts()
 
-# Display a sample record for verification
-if not df.empty:
-    print(f"Sample story:\n{df.iloc[0]}")
-else:
-    print("No data available after processing.")
+for cat, count in category_counts.items():
+    print(f"  {cat}: {count}")
