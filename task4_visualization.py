@@ -5,120 +5,94 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+import textwrap
 
 # ---------------------------------------------------------
 # Step 1: Load Processed Data
 # ---------------------------------------------------------
 
-# Load cleaned dataset generated from Task-2
-df = pd.read_csv('hacker_news_stories.csv')
+# Load cleaned dataset generated from Task-3
+df = pd.read_csv('data/trends_analysed.csv')
+
+# Create outputs folder if not exists
+os.makedirs('outputs', exist_ok=True)
+
+
+# create a function to shorten long titles for better visualization
+def wrap_title(title, width=50):
+    return "\n".join(textwrap.wrap(title, width))
 
 # ---------------------------------------------------------
-# Step 2: Feature Engineering
+# Step 2: Chart 1: Top 10 Stories by Score
 # ---------------------------------------------------------
-
-# Convert 'time' column to datetime format
-df['time'] = pd.to_datetime(df['time'])
-# Extract hour of the day for time-based analysis
-df['hour'] = df['time'].dt.hour
-# Create a new feature: length of title (number of characters)
-df['title_length'] = df['title'].apply(len)
-
-# ---------------------------------------------------------
-# Step 3: Top Authors (Bar Chart)
-# ---------------------------------------------------------
-
-# Identify top 10 authors based on number of posts
-top_authors = df['by'].value_counts().head(10)
+top_10_stories = df.sort_values(by='score', ascending=False).head(10)
+titles = top_10_stories['title'].apply(wrap_title)
+scores = top_10_stories['score']
 plt.figure(figsize=(10, 6))
-# Bar chart showing most active authors
-top_authors.plot(kind='bar')
-plt.title('Top 10 Authors by Number of Posts')
-plt.xlabel('Author')
-plt.ylabel('Number of Posts')
+plt.barh(titles, scores, color='skyblue')
+plt.xlabel('Score')
+plt.ylabel('Story Title')
+plt.title('Top 10 Stories by Score')
+plt.gca().invert_yaxis() 
+plt.tight_layout()
+plt.subplots_adjust(left=0.4)
+plt.savefig('outputs/chart1_top_stories.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+# ---------------------------------------------------------
+# Step 3: Chart 2: Stories per Category
+# ---------------------------------------------------------
+colors = ['blue', 'green', 'red', 'purple', 'orange', 'cyan', 'magenta']
+category_counts = df['category'].value_counts()
+plt.figure(figsize=(10, 6))
+plt.bar(category_counts.index, category_counts.values, color=colors, width=0.4)
+plt.xlabel('Category')
+plt.ylabel('Number of Stories')
+plt.title('Stories per Category')
 plt.xticks(rotation=45)
-# Adjust layout to prevent label overlap
 plt.tight_layout()
+plt.savefig('outputs/chart2_categories.png', dpi=300, bbox_inches='tight')
+plt.show()
 
 # ---------------------------------------------------------
-# Step 4: Score Distribution (Histogram)
+# Step 4: Chart 3: Score vs Comments: Chart 2: Stories per Category
 # ---------------------------------------------------------
+popular = df[df['popular'] == True]
+not_popular = df[df['popular'] == False]
 plt.figure(figsize=(10, 6))
-# Histogram to understand distribution of scores
-df['score'].plot(kind='hist', bins=30, edgecolor='black')
-plt.title('Distribution of Scores')
-plt.xlabel('Score')
-plt.ylabel('Frequency')
+plt.scatter(popular['score'], popular['num_comments'], label='Popular')
+plt.scatter(not_popular['score'], not_popular['num_comments'], label='Not Popular')
+plt.xlabel("Score")
+plt.ylabel("Number of Comments")
+plt.title("Score vs Comments")
+plt.legend()
 plt.tight_layout()
+plt.savefig('outputs/chart3_scatter.png')
+plt.show()
 
 # ---------------------------------------------------------
-# Step 5: Posting Activity by Hour (Line Plot)
+# Step 5: Dashboard  
 # ---------------------------------------------------------
-plt.figure(figsize=(10, 6))
-# Count number of posts for each hour
-hourly_posts = df['hour'].value_counts().sort_index()
-# Line plot to show posting trend over 24 hours
-hourly_posts.plot(kind='line', marker='o')
-plt.title('Hourly Posts')
-plt.xlabel('Hour')
-plt.ylabel('Number of Posts')
+
+# Combine all 3 charts
+fig, axes = plt.subplots(1, 3, figsize=(18,5))
+fig.subplots_adjust(left=0.35, wspace=0.4)
+
+#chart-1
+axes[0].barh(titles, scores)
+axes[0].set_title("Top 10 Stories by Score")
+axes[0].invert_yaxis()
+#chart-2
+axes[1].bar(category_counts.index, category_counts.values, color=colors)
+axes[1].set_title("Stories per Category")
+axes[1].tick_params(axis='x', rotation=45)
+#chart-3
+axes[2].scatter(popular['score'], popular['num_comments'], label='Popular')
+axes[2].scatter(not_popular['score'], not_popular['num_comments'], label='Not Popular')
+axes[2].set_title("Score vs Comments")
+axes[2].legend()
+fig.suptitle("TrendPulse Dashboard")
 plt.tight_layout()
-
-# ---------------------------------------------------------
-# Step 6: Top Scoring Posts (Horizontal Bar Chart)
-# ---------------------------------------------------------
-
-# Get top 10 highest scoring posts
-top_posts = df.sort_values(by='score', ascending=False).head(10)
-plt.figure(figsize=(10, 6))
-# Horizontal bar chart for better readability of long titles
-plt.barh(top_posts['title'], top_posts['score'], color='skyblue')
-plt.title('Top 10 Highest Scoring Posts')
-plt.xlabel('Score') 
-plt.ylabel('Post Title')
-# Invert y-axis so highest score appears on top
-plt.gca().invert_yaxis()
-# Reduce font size to fit long titles
-plt.yticks(fontsize=8)
-plt.tight_layout()
-
-# ---------------------------------------------------------
-# Step 7: Title Length vs Score (Scatter Plot)
-# ---------------------------------------------------------
-plt.figure(figsize=(10, 6))
-# Scatter plot to analyze relationship between title length and score
-plt.scatter(df['title_length'], df['score'], alpha=0.5)
-plt.title('Title Length vs. Score')
-plt.xlabel('Title Length')
-plt.ylabel('Score')
-plt.tight_layout()
-
-# ---------------------------------------------------------
-# Step 8: Score Distribution (Seaborn Box Plot)
-# ---------------------------------------------------------
-plt.figure(figsize=(10, 6))
-# Box plot to visualize spread, median, and outliers in scores
-sns.boxplot(x=df['score'])
-plt.title('Box Plot of Scores')
-plt.xlabel('Score')
-plt.tight_layout()
-
-# ---------------------------------------------------------
-# Step 9: Top Authors Contribution (Pie Chart)
-# ---------------------------------------------------------
-plt.figure(figsize=(10, 6))
-# Top 5 authors for proportional comparison
-top_authors = df['by'].value_counts().head(5)
-# Highlight the top contributor
-explode = [0.1] + [0]*4
-# Pie chart showing contribution percentage
-plt.pie(top_authors, labels=top_authors.index, autopct='%1.1f%%', startangle=140, explode=explode)
-plt.title('Top 5 Authors by Number of Posts')
-plt.tight_layout()
-
-# ---------------------------------------------------------
-# Step 10: Display All Plots
-# ---------------------------------------------------------
-
-# Render all visualizations
+plt.savefig('outputs/dashboard.png')
 plt.show()
